@@ -15,8 +15,9 @@ compras_por_mes = {}
 async def start(update: Update, context: CallbackContext):
     """Mensagem inicial do bot"""
     await update.message.reply_text(
-        "Olá! Envie mensagens como: 'Comprei Arroz 20.50'.\n"
-        "Use /subtotal para ver a soma do mês."
+        "Olá! Envie mensagens como: 'Arroz 20.50'.\n"
+        "Use /subtotal para ver a soma do mês.\n"
+        "Use /zerar para limpar a lista de compras do mês."
     )
 
 async def registrar_compra(update: Update, context: CallbackContext):
@@ -37,7 +38,7 @@ async def registrar_compra(update: Update, context: CallbackContext):
             continue
     
     if valor is None:
-        await update.message.reply_text("Não entendi o valor. Tente algo como: 'Comprei Pizza 45.90'")
+        await update.message.reply_text("Não entendi o valor. Tente algo como: 'Pizza 45.90'")
         return
     
     # Pegamos a descrição do item
@@ -46,10 +47,7 @@ async def registrar_compra(update: Update, context: CallbackContext):
     except ValueError:
         index_valor = len(palavras) - 1
 
-    if palavras[0].lower() == "comprei":
-        descricao_item = ' '.join(palavras[1:index_valor])
-    else:
-        descricao_item = ' '.join(palavras[:index_valor])
+    descricao_item = ' '.join(palavras[:index_valor])
 
     # Pega o mês/ano atual
     mes_ano = datetime.now().strftime("%m-%Y")
@@ -82,6 +80,18 @@ async def subtotal(update: Update, context: CallbackContext):
     
     await update.message.reply_text(texto_extrato)
 
+async def zerar_compras(update: Update, context: CallbackContext):
+    """
+    Zera a lista de compras do mês atual.
+    """
+    mes_ano = datetime.now().strftime("%m-%Y")
+    
+    if mes_ano in compras_por_mes:
+        compras_por_mes[mes_ano] = []
+        await update.message.reply_text("Lista de compras do mês foi zerada.")
+    else:
+        await update.message.reply_text("Nenhuma compra registrada neste mês para zerar.")
+
 def main():
     """Configuração do bot"""
     token = "7831141421:AAH1vNMwz0H41CzFmMhuasm-ur0Ys_1PZjo"  # Substitua pelo token do seu bot
@@ -91,6 +101,7 @@ def main():
     # Adicionando os handlers
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("subtotal", subtotal))
+    app.add_handler(CommandHandler("zerar", zerar_compras))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, registrar_compra))
 
     # Iniciando o bot
