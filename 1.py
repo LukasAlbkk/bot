@@ -24,6 +24,8 @@ async def registrar_compra(update: Update, context: CallbackContext):
     Captura a mensagem do usuário, tenta entender o item e o valor,
     e armazena na lista global de compras.
     """
+    global compras  # Garante que estamos acessando a lista global
+
     mensagem = update.message.text
     palavras = mensagem.split()
     
@@ -57,6 +59,8 @@ async def subtotal(update: Update, context: CallbackContext):
     """
     Retorna a soma total de todas as compras.
     """
+    global compras  # Garante que estamos acessando a lista global
+
     if not compras:
         await update.message.reply_text("Nenhuma compra registrada.")
         return
@@ -75,8 +79,9 @@ async def zerar_compras(update: Update, context: CallbackContext):
     """
     Apaga toda a lista de compras.
     """
-    global compras
-    compras = []  # Reseta a lista para uma lista vazia
+    global compras  # Garante que estamos acessando a lista global
+    compras.clear()  # Em vez de recriar a lista, limpamos ela
+
     await update.message.reply_text("Lista de compras apagada com sucesso.")
 
 def main():
