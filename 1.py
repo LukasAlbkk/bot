@@ -1,7 +1,6 @@
 import logging
 from telegram import Update
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, CallbackContext
-from datetime import datetime
 
 # Ativando logs para debug
 logging.basicConfig(
@@ -9,21 +8,21 @@ logging.basicConfig(
     level=logging.INFO
 )
 
-# Dicionário para armazenar as compras.
-compras_por_mes = {}
+# Lista global de compras
+compras = []
 
 async def start(update: Update, context: CallbackContext):
     """Mensagem inicial do bot"""
     await update.message.reply_text(
-        "Olá! Envie mensagens como: 'Arroz 20.50'.\n"
-        "Use /subtotal para ver a soma do mês.\n"
-        "Use /zerar para limpar a lista de compras do mês."
+        "Olá! Envie mensagens como: 'Arroz 20.50' para adicionar uma compra.\n"
+        "Use /subtotal para ver a soma de todas as compras.\n"
+        "Use /zerar para apagar todas as compras."
     )
 
 async def registrar_compra(update: Update, context: CallbackContext):
     """
     Captura a mensagem do usuário, tenta entender o item e o valor,
-    e armazena no dicionário.
+    e armazena na lista global de compras.
     """
     mensagem = update.message.text
     palavras = mensagem.split()
@@ -49,32 +48,24 @@ async def registrar_compra(update: Update, context: CallbackContext):
 
     descricao_item = ' '.join(palavras[:index_valor])
 
-    # Pega o mês/ano atual
-    mes_ano = datetime.now().strftime("%m-%Y")
-
-    if mes_ano not in compras_por_mes:
-        compras_por_mes[mes_ano] = []
-
-    compras_por_mes[mes_ano].append((descricao_item, valor))
+    # Adiciona à lista global
+    compras.append((descricao_item, valor))
 
     await update.message.reply_text(f"Registrado: {descricao_item} - R${valor:.2f}")
 
 async def subtotal(update: Update, context: CallbackContext):
     """
-    Retorna a soma do mês atual.
+    Retorna a soma total de todas as compras.
     """
-    mes_ano = datetime.now().strftime("%m-%Y")
-    
-    if mes_ano not in compras_por_mes or len(compras_por_mes[mes_ano]) == 0:
-        await update.message.reply_text("Nenhuma compra registrada neste mês.")
+    if not compras:
+        await update.message.reply_text("Nenhuma compra registrada.")
         return
     
-    lista_compras = compras_por_mes[mes_ano]
-    soma = sum([v for (_, v) in lista_compras])
+    soma = sum([v for (_, v) in compras])
     
     # Monta um extrato simples
-    texto_extrato = "Compras do mês:\n"
-    for item, valor in lista_compras:
+    texto_extrato = "Lista de compras:\n"
+    for item, valor in compras:
         texto_extrato += f" - {item}: R${valor:.2f}\n"
     texto_extrato += f"\nSubtotal: R${soma:.2f}"
     
@@ -82,15 +73,11 @@ async def subtotal(update: Update, context: CallbackContext):
 
 async def zerar_compras(update: Update, context: CallbackContext):
     """
-    Zera a lista de compras do mês atual.
+    Apaga toda a lista de compras.
     """
-    mes_ano = datetime.now().strftime("%m-%Y")
-    
-    if mes_ano in compras_por_mes:
-        compras_por_mes[mes_ano] = []
-        await update.message.reply_text("Lista de compras do mês foi zerada.")
-    else:
-        await update.message.reply_text("Nenhuma compra registrada neste mês para zerar.")
+    global compras
+    compras = []  # Reseta a lista para uma lista vazia
+    await update.message.reply_text("Lista de compras apagada com sucesso.")
 
 def main():
     """Configuração do bot"""
